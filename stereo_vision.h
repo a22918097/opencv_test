@@ -4,11 +4,13 @@
 #include "QObject"
 #include <opencv2/opencv.hpp>
 #include <QTime>
+#include <QDebug>
 // topview
 #include "topview.h"
 // Sensor base
 #include "sensorbase.h"
-
+#include <QDir>
+extern QDir project_path;
 #define IMG_W 640
 #define IMG_H 480
 #define IMG_W_HALF 320
@@ -47,9 +49,12 @@ public:
 
     ~stereo_vision();
     //    stereo_vision();
+    void guiUpdate();
     int match_mode;
     void close();
     void matchParamInitialize();
+    bool open(int device_index_L, int device_index_R);
+    bool loadRemapFile(int cam_focal_length, double base_line);
     // status
     int input_mode;
     bool fg_calib;                      // check whether the calibration button is checked
@@ -59,8 +64,27 @@ public:
     bool fg_reproject;                  // check whether re-project detected objects to image
     bool fg_tracking;                   // it's true when object tracking is activated
     bool fg_topview_plot_points;        // check wethere to plot each points on the topview
+    bool fg_ground_filter;
     void compute(cv::Mat& dest,cv::Mat& dest2,cv::Mat& disp_raw);
     void depthCalculation();
+    void closecam();
+    void opencam();
+    // capture from camera =========
+    int device_index_L;
+    int device_index_R;
+    cv::VideoCapture cam_L;
+    cv::VideoCapture cam_R;
+    // capture from camera ========= End
+    // calibrated images
+    cv::Mat img_r_L;
+    cv::Mat img_r_R;
+    // RGB images for displaying
+    cv::Mat img_L;
+    cv::Mat img_R;
+    // cv::Mat type capture image ==
+    cv::Mat cap_L;
+    cv::Mat cap_R;
+    // status ======================
     // disparity image
     cv::Mat disp_raw;
     cv::Mat disp;
@@ -77,6 +101,7 @@ public:
         double rig_height;
     };
     camParam* cam_param;
+
 
     // data - stereo vision ========
     struct StereoData
@@ -119,14 +144,15 @@ public:
     };
     matchParamBM* param_bm;
     int dataExec();
-    int guiUpdate();
-    QImage *color_table;                // psuedo-color table
+    //int guiUpdate();
 private:
+
+
     int* LUT_grid_row;                  // depth -> grid map row
     int* LUT_grid_col;                  // image col -> grid map col
     int* LUT_depth;                     // grid map row -> depth
     int* LUT_img_col;                   // grid map col -> image col
-    //void updateDataForDisplay();
+    void updateDataForDisplay();
     void createLUT();
     int corrGridRow(int k);
     int corrGridCol(int k);
@@ -136,12 +162,11 @@ private:
     bool camCapture();
 
 
-
-    //bool dataIn();
+    bool dataIn();
 
     bool rectifyImage();
-
-
+    bool fg_proc;
+    bool fg_pause;
 
     bool vDispCalculation();
 
@@ -151,14 +176,7 @@ private:
 
     QTime t_p;                          // process time of all exec.
 
-    // capture from camera =========
-    int device_index_L;
-    int device_index_R;
-    cv::VideoCapture cam_L;
-    cv::VideoCapture cam_R;
-    // capture from camera ========= End
 
-    // status ======================
     bool fg_cam_L, fg_cam_R;            // open or not
     bool fg_cam_opened;                 // check if cams are opened
     bool fg_calib_loaded;               // load the calibration files or not
@@ -168,22 +186,13 @@ private:
     cv::Mat img_match_L;
     cv::Mat img_match_R;
     cv::Ptr<cv::StereoBM> bm;
-    // calibrated images
-    cv::Mat img_r_L;
-    cv::Mat img_r_R;
-    // RGB images for displaying
-    cv::Mat img_L;
-    cv::Mat img_R;
+
     // stereo calibration stuffs ===
-    //QDir remap_path;
+    QDir remap_path;
     QString remap_folder;
     QString remap_file;
     cv::Mat rmapLx, rmapLy, rmapRx, rmapRy;
     cv::Rect calibROI[2];
-    void GUIdispaly();
-    cv::VideoCapture cap;
-    cv::VideoCapture capp;
-
 private slots:
     // BM ===========================
     void change_bm_pre_filter_size(int value);
@@ -205,9 +214,11 @@ private slots:
     void change_bm_speckle_range(int value);
     // BM =========================== End
 signals:
-    void updateGUI(cv::Mat *img_L, cv::Mat *img_R, cv::Mat *disp, cv::Mat *disp_pseudo, cv::Mat *topview, cv::Mat *img_detected, int detected_obj, int current_frame_count);
+    void updateGUI(cv::Mat *img_L, cv::Mat *img_R, cv::Mat *disp, cv::Mat *disp_pseudo);
+    //void updateGUI(cv::Mat *img_L, cv::Mat *img_R, cv::Mat *disp, cv::Mat *disp_pseudo, cv::Mat *topview, cv::Mat *img_detected, int detected_obj, int current_frame_count);
 
 };
+
 
 
 
